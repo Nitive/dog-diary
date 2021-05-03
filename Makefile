@@ -21,3 +21,7 @@ psql: .env.local
 	--port="$$PORSTEG_PORT" \
 	--username="$$POSTGRES_USER" \
 	--dbname="$$POSTGRES_DATABASE"
+
+# Auto format code
+fmt:
+	yarn prettier --write .
