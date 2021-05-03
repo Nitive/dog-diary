@@ -1,5 +1,5 @@
 import { createRoute, APIResponse } from "@/src/api/create-route"
-import { parseUUIDParam } from "@/src/api/parse-uuid-param"
+import { parseUUIDParam } from "@/src/api/parse-params"
 
 interface BadDiaryIDResponse {
   errorCode: "bad_diary_id"
