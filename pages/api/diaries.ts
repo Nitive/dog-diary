@@ -1,4 +1,4 @@
-import { APIResponse, createRoute } from "../../src/api/create-route"
+import { APIResponse, createRoute } from "@/src/api/create-route"
 
 interface BadDogNameResponse {
   errorCode: "bad_dog_name"
