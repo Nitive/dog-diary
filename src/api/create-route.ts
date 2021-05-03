@@ -3,6 +3,7 @@ import { Client } from "pg"
 import { appConfig } from "./app-config"
 import {
   InternalError,
+  isAPIError,
   methodNotFoundError,
   NotFoundError,
 } from "./error-response"
@@ -44,6 +45,10 @@ export function createRoute(methods: {
         } catch (err) {
           console.error(err)
           if (res.writable) {
+            if (isAPIError(err)) {
+              return res.status(err.httpStatus).json(err)
+            }
+
             return res
               .status(500)
               .json({ errorCode: "internal_error", help: "Internal error" })

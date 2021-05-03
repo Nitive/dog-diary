@@ -16,3 +16,23 @@ export function methodNotFoundError(req: NextApiRequest): NotFoundError {
     help: `${req.method} method is not defined`,
   }
 }
+
+export interface APIError {
+  httpStatus: number
+  err: {
+    errorCode: string
+    help: string
+  }
+}
+
+export function isAPIError(err: unknown): err is APIError {
+  return (
+    !!err &&
+    typeof (err as any).httpStatus === "number" &&
+    typeof (err as any).err?.errorCode === "string"
+  )
+}
+
+export function createAPIErrorResponse(errorData: APIError) {
+  return errorData
+}

@@ -1,9 +1,5 @@
-import {
-  createRoute,
-  APIRequest,
-  APIResponse,
-} from "../../../src/api/create-route"
-import { validate as uuidValidate } from "uuid"
+import { createRoute, APIResponse } from "@/src/api/create-route"
+import { parseUUIDParam } from "@/src/api/parse-uuid-param"
 
 interface BadDiaryIDResponse {
   errorCode: "bad_diary_id"
@@ -20,32 +16,17 @@ interface SuccessResponse {
 
 type Response = SuccessResponse | BadDiaryIDResponse
 
-async function parseDiaryID(diaryID: unknown): Promise<string> {
-  if (typeof diaryID !== "string") {
-    return Promise.reject({
-      errorCode: "bad_diary_id",
-      help: ".diaryID is not a string",
-    })
-  }
-
-  if (!uuidValidate(diaryID)) {
-    return Promise.reject({
-      errorCode: "bad_diary_id",
-      help: ".diaryID is a UUID",
-    })
-  }
-
-  return diaryID
+async function parseDiaryID(value: unknown) {
+  return await parseUUIDParam({
+    value,
+    errorCode: "bad_diary_id",
+    paramName: "diaryID",
+  })
 }
 
 export default createRoute({
   async GET(req, res: APIResponse<Response>) {
-    let diaryID = ""
-    try {
-      diaryID = await parseDiaryID(req.query.diaryID)
-    } catch (err) {
-      return res.status(400).json(err)
-    }
+    const diaryID = await parseDiaryID(req.query.diaryID)
 
     const pgRes = await req.ctx.pg.query(
       "SELECT id, dog_name from diaries WHERE id = $1",
