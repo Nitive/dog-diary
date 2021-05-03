@@ -1,4 +1,8 @@
-import { createRoute, APIResponse } from "../../../src/api/create-route"
+import {
+  createRoute,
+  APIRequest,
+  APIResponse,
+} from "../../../src/api/create-route"
 import { validate as uuidValidate } from "uuid"
 
 interface BadDiaryIDResponse {
@@ -16,23 +20,35 @@ interface SuccessResponse {
 
 type Response = SuccessResponse | BadDiaryIDResponse
 
+async function parseDiaryID(diaryID: unknown): Promise<string> {
+  if (typeof diaryID !== "string") {
+    return Promise.reject({
+      errorCode: "bad_diary_id",
+      help: ".diaryID is not a string",
+    })
+  }
+
+  if (!uuidValidate(diaryID)) {
+    return Promise.reject({
+      errorCode: "bad_diary_id",
+      help: ".diaryID is a UUID",
+    })
+  }
+
+  return diaryID
+}
+
 export default createRoute({
   async GET(req, res: APIResponse<Response>) {
-    const { diaryID } = req.query
-    if (typeof diaryID !== "string") {
-      return res
-        .status(400)
-        .json({ errorCode: "bad_diary_id", help: ".diaryID is not a string" })
-    }
-
-    if (!uuidValidate(diaryID)) {
-      return res
-        .status(400)
-        .json({ errorCode: "bad_diary_id", help: ".diaryID is a UUID" })
+    let diaryID = ""
+    try {
+      diaryID = await parseDiaryID(req.query.diaryID)
+    } catch (err) {
+      return res.status(400).json(err)
     }
 
     const pgRes = await req.ctx.pg.query(
-      "SELECT * from diaries WHERE id = $1",
+      "SELECT id, dog_name from diaries WHERE id = $1",
       [diaryID]
     )
 
@@ -43,12 +59,43 @@ export default createRoute({
       })
     }
 
+    if (pgRes.rowCount > 1) {
+      return res.status(500).json({
+        errorCode: "internal_error",
+        help: `Expected one diary but found ${pgRes.rowCount}`,
+      })
+    }
+
     return res.status(200).json({
       status: "ok",
       diary: {
         id: pgRes.rows[0].id,
         dogName: pgRes.rows[0].dog_name,
       },
+    })
+  },
+  async PATCH(req, res: APIResponse<any>) {
+    let diaryID = ""
+    try {
+      diaryID = await parseDiaryID(req.query.diaryID)
+    } catch (err) {
+      return res.status(400).json(err)
+    }
+
+    const dogName = req.body?.dogName
+    if (typeof dogName !== "string") {
+      return res
+        .status(400)
+        .json({ errorCode: "bad_dog_name", help: ".dogName is not a string" })
+    }
+
+    await req.ctx.pg.query("UPDATE diaries SET dog_name = $2 WHERE id = $1", [
+      diaryID,
+      dogName,
+    ])
+
+    return res.status(200).json({
+      status: "ok",
     })
   },
 })

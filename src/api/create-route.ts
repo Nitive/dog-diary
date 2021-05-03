@@ -40,12 +40,14 @@ export function createRoute(methods: {
         try {
           await clientP
           req.ctx = { pg: client }
-          await handler(req, res)
+          return await handler(req, res)
         } catch (err) {
           console.error(err)
-          res
-            .status(500)
-            .json({ errorCode: "internal_error", help: "Internal error" })
+          if (res.writable) {
+            return res
+              .status(500)
+              .json({ errorCode: "internal_error", help: "Internal error" })
+          }
         }
       }
     }
